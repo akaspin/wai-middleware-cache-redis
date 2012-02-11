@@ -1,5 +1,5 @@
 name:           wai-middleware-cache-redis
-version:        0.1.0
+version:        0.1.1
 cabal-version:  >= 1.8
 build-type:     Simple
 stability:      Experimental
@@ -28,12 +28,12 @@ library
                    conduit >= 0.2 && < 0.3,
                    cryptohash,
                    hedis >= 0.3 && < 0.4,
-                   hedis-pile >= 0.2.1,
+                   hedis-pile >= 0.3,
                    hex,
                    http-types >= 0.6 && < 0.7,
                    transformers >= 0.2 && < 0.3,
                    wai >= 1.1,
-                   wai-middleware-cache >= 0.1
+                   wai-middleware-cache >= 0.2
   ghc-options:     -Wall
   exposed-modules: Network.Wai.Middleware.Cache.Redis
 

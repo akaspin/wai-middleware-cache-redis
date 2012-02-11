@@ -25,14 +25,14 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import qualified Control.Arrow as A (first)
 
-import Data.Maybe (fromJust)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS8
 import Data.ByteString.Lazy (fromChunks)
 import Data.CaseInsensitive (original, mk)
 import qualified Data.Serialize as S
 
-import Data.Conduit (ResourceT, runResourceT, ($$), ($=), Flush(..))
+import Data.Conduit (ResourceT, runResourceT, resourceThrow, ($$), ($=), 
+                     Flush(..))
 import qualified Data.Conduit.List as CL
 import Data.Conduit.Blaze (builderToByteStringFlush)
 
@@ -40,16 +40,19 @@ import qualified Crypto.Hash.SHA1 as SHA
 import Data.Hex (hex)
 
 import Network.Wai (Request(..), Response(..), responseSource, responseLBS)
-import Network.Wai.Middleware.Cache (CacheBackend)
+import Network.Wai.Middleware.Cache (CacheBackend, CacheBackendError(..))
 import Network.HTTP.Types (Status(..))
 
 import qualified Database.Redis as R
 import Database.Redis.Pile (pile)
+import Control.Monad.Trans.Class (lift)
 
 -- | Redis backend for "Network.Wai.Middleware.Cache". 
 --
 --   Except caching, this backend always adds @ETag@ to 'Response' headers 
 --   with hexed @SHA1@ as value.
+--
+--   This backend can't cache files. Use routing or catch 'CacheBackendError'
 redisBackend ::
        R.ConnectInfo
             -- ^ Redis connection info.
@@ -75,14 +78,18 @@ redisBackend cInfo db cachePrefix ttlFn tagsFn keyFn eTagFn app req = do
         conn <- R.connect cInfo
         R.runRedis conn $ do
             void $ R.select db
-            pile cachePrefix key eTag $ runResourceT $ do
+            pile cachePrefix key eTag (Just "response") $ runResourceT $ do
                 res <- app req
                 case res of
-                    ResponseFile{} -> undefined
+                    (ResponseFile _ _ fp part) -> lift $ 
+                        resourceThrow $ CacheBackendError $ BS8.pack $
+                            "Can't cache files : " ++ fp ++ ":" ++ show part  
                     _ -> do 
                         d <- parseResponse res
                         return (d, ttl, tags)
-    return $ buildResponse rawRes 
+    case buildResponse rawRes of
+        Left e -> lift $ resourceThrow $ CacheBackendError e
+        Right r -> return r
   where
     (ttl, tags, key) = (ttlFn req, tagsFn req, keyFn req)
     eTag = case eTagFn req of
@@ -97,17 +104,18 @@ lookupETag = lookup "If-None-Match" . requestHeaders
 -- Internal
 ----------------------------------------------------------------------------
 
-buildResponse :: Maybe [(B.ByteString, B.ByteString)] -> Maybe Response
-buildResponse Nothing = Nothing
-buildResponse (Just raw) = 
-    Just $ responseLBS (Status sc sm) hs body
+buildResponse :: Maybe [(B.ByteString, B.ByteString)] 
+    -> Either B.ByteString (Maybe Response)
+buildResponse Nothing = Right Nothing
+buildResponse (Just raw) = decodeResp raw
   where
-    rawResp = fromJust . lookup "response" $ raw
-    (sc, sm, hs, body) = case S.decode rawResp of
-        Left sm' -> (500, BS8.pack sm', [], "")
-        Right (sc', sm', hs', bodyChunks) ->
-            (sc', sm', map (A.first mk) hs', fromChunks bodyChunks)
-
+    decodeResp (("response", rawResp):[]) = case S.decode rawResp of
+        Left sm' -> Left $ BS8.pack sm'
+        Right (sc', sm', hs', bodyChunks) -> Right $ Just $
+            responseLBS (Status sc' sm') 
+                        (map (A.first mk) hs') 
+                        $ fromChunks bodyChunks
+    decodeResp _ = Left "Data error"
         
 parseResponse :: Response -> ResourceT IO [(B.ByteString, B.ByteString)]
 parseResponse res = do
