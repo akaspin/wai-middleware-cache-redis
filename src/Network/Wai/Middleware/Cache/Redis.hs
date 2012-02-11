@@ -1,6 +1,18 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-} 
+{-# LANGUAGE OverloadedStrings #-} 
 
--- | Redis backend for @wai-middleware-cache@.
+-- | Redis backend for "Network.Wai.Middleware.Cache".
+--
+--   This backend uses "Database.Redis.Pile" for low-lewel operations.
+--
+-- > cache
+-- >     (redisBackend 
+-- >         -- use defaults, DB 0 and "myprefix" 
+-- >         R.defaultConnectInfo 0 "myprefix"
+-- >         (const Nothing)    -- no expiration
+-- >         (const ["mytag"])  -- simply one tag "mytag"
+-- >         (rawPathInfo)      -- URL path as key 
+-- >         lookupETag         -- And find "If-None-Match"
+-- >     ) app -- our app
 
 module Network.Wai.Middleware.Cache.Redis (
     -- * Cache backend
@@ -34,22 +46,29 @@ import Network.HTTP.Types (Status(..))
 import qualified Database.Redis as R
 import Database.Redis.Pile (pile)
 
+-- | Redis backend for "Network.Wai.Middleware.Cache". 
+--
+--   Except caching, this backend always adds @ETag@ to 'Response' headers 
+--   with hexed @SHA1@ as value.
 redisBackend ::
        R.ConnectInfo
-            -- ^ Redis connection info
+            -- ^ Redis connection info.
     -> Integer  
-            -- ^ Redis DB
+            -- ^ Redis DB.
     -> B.ByteString
-            -- ^ Cache prefix
+            -- ^ Cache prefix for key and tags.  
+            --   See "Database.Redis.Pile" for details.
     -> (Request -> Maybe Integer)
-            -- ^ TTL
+            -- ^ TTL extraction. Use 'Nothing' for no expiration.
     -> (Request -> [B.ByteString])
             -- ^ Tags extraction. 
+            --   See "Database.Redis.Pile" for details.
     -> (Request -> B.ByteString)
             -- ^ Key extraction.
     -> (Request -> Maybe B.ByteString)
             -- ^ @ETag@ value extraction. To extract @If-None-Match@ header
-            --   use 'lookupETag'.
+            --   use 'lookupETag'. Use @(const Nothing)@ for block 
+            --   @304@-responses.
     -> CacheBackend
 redisBackend cInfo db cachePrefix ttlFn tagsFn keyFn eTagFn app req = do
     rawRes <- liftIO $ do
