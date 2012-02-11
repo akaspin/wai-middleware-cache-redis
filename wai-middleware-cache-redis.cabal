@@ -6,6 +6,16 @@ stability:      Experimental
 author:         Alexander Dorofeev <aka.spin@gmail.com>
 synopsis:       Redis backend for wai-middleware-cache
 description:    This package provides Redis backend for wai-middleware-cache
+homepage:       https://github.com/akaspin/wai-middleware-cache-redis
+bug-reports:    https://github.com/akaspin/wai-middleware-cache-redis/issues
+category:       Database, Web
+license:        BSD3
+license-file:   LICENSE
+maintainer:     Alexander Dorofeev <aka.spin@gmail.com>
+
+source-repository head
+  type:         git
+  location:     git://github.com/akaspin/wai-middleware-cache-redis.git
 
 library
   hs-source-dirs:  src
