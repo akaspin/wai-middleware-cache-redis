@@ -74,11 +74,12 @@ redisBackend ::
             --   @304@-responses.
     -> CacheBackend
 redisBackend cInfo db cachePrefix ttlFn tagsFn keyFn eTagFn app req = do
-    rawRes <- liftIO $ do
-        conn <- R.connect cInfo
-        R.runRedis conn $ do
+    rawRes <-  do
+        conn <- liftIO $ R.connect cInfo
+        liftIO $ R.runRedis conn $ do
             void $ R.select db
-            pile cachePrefix key eTag (Just "response") $ runResourceT $ do
+            pile cachePrefix key eTag (Just "response") $ 
+                        liftIO $ runResourceT $ do
                 res <- app req
                 case res of
                     (ResponseFile _ _ fp part) -> lift $ 
