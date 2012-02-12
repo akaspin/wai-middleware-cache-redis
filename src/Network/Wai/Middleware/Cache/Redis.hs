@@ -123,7 +123,9 @@ parseResponse res = do
                     $= CL.map fromChunk $$ CL.consume
     let bodyHash = hex . SHA.finalize . foldl SHA.update SHA.init $ bodyChunks
     return [("response", 
-                S.encode (sc, sm, map (A.first original) hs, bodyChunks)),
+                S.encode (sc, sm, map 
+                          (A.first original) (("ETag", bodyHash):hs), 
+                          bodyChunks)),
             ("header:ETag", bodyHash)]  
   where
     (Status sc sm, hs, b) = responseSource res
