@@ -24,6 +24,7 @@ main = do
     run 8888 $ cache 
                     (redisBackend R.defaultConnectInfo 0 "myprefix"
                         (const Nothing) (const ["ex"]) (rawPathInfo) 
+                        (const True)
                         lookupETag) 
              $ route 
                app

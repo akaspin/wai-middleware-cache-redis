@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-} 
+{-# LANGUAGE OverloadedStrings, DoAndIfThenElse #-} 
 
 -- | Redis backend for "Network.Wai.Middleware.Cache".
 --
@@ -49,9 +49,6 @@ import Control.Monad.Trans.Class (lift)
 
 -- | Redis backend for "Network.Wai.Middleware.Cache". 
 --
---   Except caching, this backend always adds @ETag@ to 'Response' headers 
---   with hexed @SHA1@ as value.
---
 --   This backend can't cache files. Use routing or catch 'CacheBackendError'
 redisBackend ::
        R.ConnectInfo
@@ -72,8 +69,14 @@ redisBackend ::
             -- ^ @ETag@ value extraction. To extract @If-None-Match@ header
             --   use 'lookupETag'. Use @(const Nothing)@ for block 
             --   @304@-responses.
+    -> (Request -> Bool)
+            -- ^ @ETag@ creation flag. If it 'True', backend adds @ETag@ to 
+            --   'Response' headers with hexed @SHA1@ as value
     -> CacheBackend
-redisBackend cInfo db cachePrefix ttlFn tagsFn keyFn eTagFn app req = do
+redisBackend cInfo db cachePrefix 
+             ttlFn tagsFn keyFn 
+             eTagFn needEtagFn
+             app req = do
     rawRes <- liftIO $  do
         conn <- R.connect cInfo
         R.runRedis conn $ do
@@ -86,13 +89,14 @@ redisBackend cInfo db cachePrefix ttlFn tagsFn keyFn eTagFn app req = do
                         resourceThrow $ CacheBackendError $ BS8.pack $
                             "Can't cache files : " ++ fp ++ ":" ++ show part  
                     _ -> do 
-                        d <- parseResponse res
+                        d <- parseResponse needEtag res
                         return (d, ttl, tags)
     case buildResponse rawRes of
         Left e -> lift $ resourceThrow $ CacheBackendError e
         Right r -> return r
   where
-    (ttl, tags, key) = (ttlFn req, tagsFn req, keyFn req)
+    (ttl, tags, key, needEtag) = (ttlFn req, tagsFn req, 
+                                  keyFn req, needEtagFn req)
     eTag = case eTagFn req of
         Nothing -> Nothing
         Just v -> Just ("header:ETag", v)
@@ -118,11 +122,14 @@ buildResponse (Just raw) = decodeResp raw
                         $ fromChunks bodyChunks
     decodeResp _ = Left "Data error"
         
-parseResponse :: Response -> ResourceT IO [(B.ByteString, B.ByteString)]
-parseResponse res = do
+parseResponse :: Bool -> Response 
+    -> ResourceT IO [(B.ByteString, B.ByteString)]
+parseResponse needEtag res = do
     bodyChunks <- b $= builderToByteStringFlush 
                     $= CL.map fromChunk $$ CL.consume
-    let bodyHash = hex . SHA.finalize . foldl SHA.update SHA.init $ bodyChunks
+    let bodyHash = if needEtag 
+        then hex . SHA.finalize . foldl SHA.update SHA.init $ bodyChunks
+        else ""
     return [("response", 
                 S.encode (sc, sm, map 
                           (A.first original) (("ETag", bodyHash):hs), 
