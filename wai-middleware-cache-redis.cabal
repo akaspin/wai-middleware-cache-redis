@@ -1,5 +1,5 @@
 name:           wai-middleware-cache-redis
-version:        0.2.0
+version:        0.2.1
 cabal-version:  >= 1.8
 build-type:     Simple
 stability:      Experimental
@@ -27,8 +27,8 @@ library
                    cereal >= 0.3.1.0,
                    conduit >= 0.2 && < 0.3,
                    cryptohash,
-                   hedis >= 0.3 && < 0.4,
-                   hedis-pile >= 0.4.0,
+                   hedis >= 0.4 && < 0.5,
+                   hedis-pile >= 0.4,
                    hex,
                    http-types >= 0.6 && < 0.7,
                    transformers >= 0.2 && < 0.3,
