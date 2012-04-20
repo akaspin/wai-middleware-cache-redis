@@ -1,5 +1,5 @@
 name:           wai-middleware-cache-redis
-version:        0.2.2
+version:        0.3.0
 cabal-version:  >= 1.8
 build-type:     Simple
 stability:      Experimental
@@ -14,27 +14,47 @@ license-file:   LICENSE
 maintainer:     Alexander Dorofeev <aka.spin@gmail.com>
 
 source-repository head
-  type:         git
-  location:     git://github.com/akaspin/wai-middleware-cache-redis.git
+  type:      git
+  location:  git://github.com/akaspin/wai-middleware-cache-redis.git
 
 library
-  hs-source-dirs:  src
-  build-depends:   
-                   base >= 4 && < 5,
-                   blaze-builder-conduit >= 0.2,
+  hs-source-dirs:   src
+  build-depends:    base >= 4 && < 5,
+                   binary,
+                   blaze-builder-conduit >= 0.4,
                    bytestring >= 0.9 && < 0.10,
                    case-insensitive >= 0.2,
-                   cereal >= 0.3.1.0,
-                   conduit >= 0.2 && < 0.4,
-                   cryptohash,
+                   conduit >= 0.4 && < 0.5,
                    hedis >= 0.4 && < 0.5,
-                   hedis-pile >= 0.4,
-                   hex,
+                   hedis-pile >= 0.5.1,
                    http-types >= 0.6 && < 0.7,
-                   transformers >= 0.2 && < 0.3,
-                   wai >= 1.1,
-                   wai-middleware-cache >= 0.2,
+                   string-conversions,
+                   transformers >= 0.2 && < 0.4,
+                   wai >= 1.2,
+                   wai-middleware-cache >= 0.3,
                    lifted-base
-  ghc-options:     -Wall
-  exposed-modules: Network.Wai.Middleware.Cache.Redis
+  ghc-options:      -Wall
+  exposed-modules:  Network.Wai.Middleware.Cache.Redis
+
+test-suite test
+  type:            exitcode-stdio-1.0
+  x-uses-tf:       true
+  build-depends:   
+                   base >= 4,
+                   HUnit >= 1.2 && < 2,
+                   QuickCheck >= 2.4,
+                   test-framework >= 0.4.1,
+                   test-framework-quickcheck2,
+                   test-framework-hunit,
+
+                   bytestring >= 0.9 && < 0.10,
+                   binary,
+                   case-insensitive >= 0.2,
+                   wai,
+                   wai-test,
+                   http-types,
+                   transformers
+  ghc-options:     -Wall -rtsopts
+  hs-source-dirs:  test
+  main-is:   Main.hs
 
