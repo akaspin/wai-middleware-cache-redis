@@ -24,16 +24,12 @@ module Network.Wai.Middleware.Cache.Redis (
 ) where
 
 import Control.Monad (void)
-import Control.Monad.Trans.Class (lift)
 import Control.Monad.IO.Class (liftIO)
 import qualified Control.Arrow as A (first)
-import Control.Exception.Lifted (throw)
 
 import Data.Maybe (fromMaybe)
 
 import Data.ByteString (ByteString)
-import Data.String.Conversions ((<>), cs)
-
 import Data.ByteString.Lazy (fromChunks)
 import Data.CaseInsensitive (original, mk, CI(..))
 

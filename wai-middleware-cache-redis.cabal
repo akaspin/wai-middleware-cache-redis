@@ -28,33 +28,10 @@ library
                    hedis >= 0.4 && < 0.5,
                    hedis-pile >= 0.5.1,
                    http-types >= 0.6 && < 0.7,
-                   string-conversions,
                    transformers >= 0.2 && < 0.4,
                    wai >= 1.2,
-                   wai-middleware-cache >= 0.3,
-                   lifted-base
+                   wai-middleware-cache >= 0.3
   ghc-options:      -Wall
   exposed-modules:  Network.Wai.Middleware.Cache.Redis
 
-test-suite test
-  type:            exitcode-stdio-1.0
-  x-uses-tf:       true
-  build-depends:   
-                   base >= 4,
-                   HUnit >= 1.2 && < 2,
-                   QuickCheck >= 2.4,
-                   test-framework >= 0.4.1,
-                   test-framework-quickcheck2,
-                   test-framework-hunit,
-
-                   bytestring >= 0.9 && < 0.10,
-                   binary,
-                   case-insensitive >= 0.2,
-                   wai,
-                   wai-test,
-                   http-types,
-                   transformers
-  ghc-options:     -Wall -rtsopts
-  hs-source-dirs:  test
-  main-is:   Main.hs
 
