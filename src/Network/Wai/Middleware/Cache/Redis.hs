@@ -23,7 +23,6 @@ module Network.Wai.Middleware.Cache.Redis (
     redisBackend,
 ) where
 
-import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import qualified Control.Arrow as A (first)
 
@@ -53,8 +52,8 @@ redisBackend ::
     -> ByteString
             -- ^ Cache prefix for key and tags.  
             --   See "Database.Redis.Pile" for details.
-    -> Maybe Integer
-            -- ^ Cache TTL. Use 'Nothing' for no expiration.
+    -> Integer
+            -- ^ Cache TTL. Use @Zero (0)@  for no expiration.
     -> [ByteString]
             -- ^ Cache Tags. See "Database.Redis.Pile" for details.
     -> (Request -> ByteString)
@@ -65,15 +64,15 @@ redisBackend ::
             --   @304@-responses.
     -> CacheBackend
 redisBackend cInfo db cachePrefix ttl tags keyFn eTagFn app req = do
-    rawRes <- liftIO $ do
+    cachedResponse <- liftIO $ do
         conn <- R.connect cInfo
         R.runRedis conn $ do
-            void $ R.select db
+            _ <- R.select db
             pile cachePrefix key eTag $ liftIO . runResourceT $ do
                 res <- app req
                 (h, d) <- buildCachedResponse res
                 return (d, h, tags, ttl)
-    parseCachedResponse rawRes
+    parseCachedResponse cachedResponse
   where
     (key, eTag) = (keyFn req, eTagFn req)
 
