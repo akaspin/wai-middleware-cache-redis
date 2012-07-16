@@ -1,5 +1,5 @@
 name:           wai-middleware-cache-redis
-version:        0.4.0
+version:        0.4.1
 cabal-version:  >= 1.8
 build-type:     Simple
 stability:      Experimental
@@ -21,13 +21,13 @@ library
   hs-source-dirs:   src
   build-depends:    base >= 4 && < 5,
                    binary,
-                   blaze-builder-conduit >= 0.4,
+                   blaze-builder-conduit >= 0.5,
                    bytestring >= 0.9 && < 0.10,
                    case-insensitive >= 0.2,
-                   conduit >= 0.4 && < 0.5,
+                   conduit >= 0.5 && < 0.6,
                    hedis >= 0.5 && < 0.6,
                    hedis-pile >= 0.6,
-                   http-types >= 0.6 && < 0.7,
+                   http-types >= 0.7 && < 0.8,
                    transformers >= 0.2 && < 0.4,
                    wai >= 1.2,
                    wai-middleware-cache >= 0.3
